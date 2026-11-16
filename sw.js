@@ -10,7 +10,8 @@ self.addEventListener("activate", e => {
 self.addEventListener("fetch", e => {
   if (e.request.method !== "GET") return;
   if (e.request.mode === "navigate") {
-    e.respondWith(fetch(e.request).then(resp => {
+    // "no-store": ignora o cache HTTP do GitHub Pages (10 min) para o app instalado pegar a versão nova na hora
+    e.respondWith(fetch(e.request, { cache: "no-store" }).then(resp => {
       const copia = resp.clone(); caches.open(CACHE).then(c => c.put("index.html", copia)); return resp;
     }).catch(() => caches.match("index.html")));
     return;
