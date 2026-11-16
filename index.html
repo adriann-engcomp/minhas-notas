@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0f1626" media="(prefers-color-scheme: dark)">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Notas">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-180.png">
+<title>Minhas Notas</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;500;700&family=Caveat:wght@700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* VOICE: claro, escolar, preciso — um boletim que entende o critério de cada disciplina
+   IDEA: a página do plano de ensino, com as fórmulas do professor e o resultado escrito a caneta vermelha
+   PICTURE: cada matéria é um cartão: notas em cima, fórmulas embaixo com o valor ao lado, média final grande
+   COLOUR and TYPE: papel branco, tinta azul-escura, caneta vermelha; Lexend, Caveat para resultados, mono para fórmulas
+   LAYOUT: título e resumo no topo, cartões das matérias em coluna; tudo empilha no celular */
+:root{color-scheme:light dark;
+--bg:light-dark(#ffffff,#0f1626);--paper:light-dark(#f4f7fc,#172036);--line:light-dark(#d9e2f0,#2a3654);
+--ink:light-dark(#14213d,#e7ecf6);--soft:light-dark(#5a6784,#9aa7c4);--blue:light-dark(#1f4fd1,#7da2ff);
+--red:light-dark(#d62839,#ff6b78);--ok:light-dark(#1a7f4b,#5fd39a);--warn:light-dark(#b86e00,#ffb84d)}
+:root[data-theme=light]{color-scheme:light}:root[data-theme=dark]{color-scheme:dark}
+*{box-sizing:border-box;min-width:0}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 Lexend,system-ui,sans-serif;overflow-x:clip}
+.band{padding:clamp(24px,4vw,56px) max(5vw,16px);max-width:1100px;margin:0 auto}
+h1{font-size:clamp(32px,5vw,48px);line-height:1.05;margin:0 0 6px}
+.sub{color:var(--soft);margin:0;max-width:62ch}
+.sum{display:flex;flex-wrap:wrap;gap:10px;margin:22px 0 0}
+.chip{display:flex;gap:10px;align-items:baseline;background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:6px 14px;text-decoration:none;color:var(--ink)}
+.chip b{font-family:Caveat,cursive;font-size:28px;line-height:1}
+input,select,textarea{font:16px Lexend,sans-serif;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:8px 10px;min-height:44px;width:100%}
+.mono{font-family:'JetBrains Mono',ui-monospace,monospace;font-size:15px}
+:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
+button{font:500 15px Lexend,sans-serif;min-height:44px;padding:0 16px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink);cursor:pointer;white-space:nowrap}
+.pri{background:var(--blue);border-color:var(--blue);color:light-dark(#fff,#0f1626)}
+.ghost{border:0;background:none;color:var(--soft);padding:0 10px}
+.add{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,220px) auto;gap:10px;margin:28px 0 20px}
+.list{display:grid;gap:22px}
+.card{border:1px solid var(--line);border-radius:20px;padding:clamp(16px,3vw,26px);display:grid;gap:18px;scroll-margin-top:16px}
+.head{display:flex;gap:16px;justify-content:space-between;align-items:start;flex-wrap:wrap}
+.head h2{font-size:24px;margin:0;line-height:1.15;word-break:break-word}
+.final{text-align:right}
+.final b{font-family:Caveat,cursive;font-size:64px;line-height:.8;display:block}
+.tag{display:inline-block;font-size:13px;font-weight:500;padding:2px 10px;border-radius:99px;border:1px solid currentColor;white-space:nowrap}
+.ok{color:var(--ok)}.warn{color:var(--warn)}.bad{color:var(--red)}.na{color:var(--soft)}
+h3{font-size:15px;margin:0 0 8px;color:var(--soft);font-weight:500}
+.vars{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:8px}
+.var{position:relative;background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:6px 8px 8px}
+.var label{display:flex;justify-content:space-between;align-items:center;font-size:14px;font-weight:500}
+.var input{min-height:40px;margin-top:2px;text-align:center}
+.var .x{min-height:28px;width:28px;padding:0;border:0;background:none;color:var(--soft);font-size:14px}
+.row2{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;margin-top:10px}
+.forms{display:grid;gap:8px}
+.f{display:grid;grid-template-columns:minmax(64px,110px) auto minmax(0,1fr) 70px 40px;gap:8px;align-items:center}
+.f .eq{font-family:'JetBrains Mono',monospace;color:var(--soft)}
+.f output{font-family:Caveat,cursive;font-size:30px;text-align:right;color:var(--red);white-space:nowrap}
+.f .x{min-height:40px;width:40px;padding:0;color:var(--soft)}
+.f.last{background:var(--paper);border-radius:12px;padding:6px;margin:0 -6px}
+.err{grid-column:1/-1;color:var(--red);font-size:14px;margin:-2px 0 4px}
+.need{margin:0;font-size:15px;background:var(--paper);border-left:4px solid var(--blue);padding:10px 14px;border-radius:0 10px 10px 0}
+.foot{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.foot label{display:flex;gap:8px;align-items:center;font-size:14px;color:var(--soft)}
+.foot label input{width:80px}
+details{background:var(--paper);border-radius:14px;padding:12px 16px;margin-top:26px}
+summary{cursor:pointer;font-weight:500;min-height:28px}
+details code{font-family:'JetBrains Mono',monospace;font-size:14px;background:var(--bg);padding:1px 6px;border-radius:6px;border:1px solid var(--line)}
+details li{margin:4px 0}
+.leg{margin:0;padding:12px 14px}.lg{display:grid;grid-template-columns:auto minmax(0,1fr);gap:6px 12px;align-items:center;margin-top:10px}
+.lg b{font-family:'JetBrains Mono',monospace;font-size:14px;white-space:nowrap}.lg input{min-height:38px;padding:6px 10px;font-size:15px;background:var(--bg)}
+.empty{border:2px dashed var(--line);border-radius:18px;padding:32px;text-align:center;color:var(--soft)}
+.toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:8px 10px 8px 18px;border-radius:12px;display:none;gap:12px;align-items:center;z-index:5}
+.toast button{background:none;border:0;color:var(--bg);text-decoration:underline;min-height:36px}
+@media(max-width:600px){.add{grid-template-columns:1fr}.f{grid-template-columns:minmax(0,1fr) 64px 40px}.f .eq{display:none}.f .ex{grid-column:1/-1;order:5}.final b{font-size:52px}}
+</style>
+</head>
+<body>
+<main class="band">
+  <h1>Minhas notas</h1>
+  <p class="sub">Cada matéria tem as suas notas e o seu próprio critério de média. Escreva as fórmulas do jeito do plano de ensino e o resultado aparece na hora. A última fórmula de cada matéria é a nota final.</p>
+  <div class="sum" id="sum"></div>
+
+  <form class="add" id="addForm">
+    <input id="newName" placeholder="Nova matéria (ex.: MA141)" aria-label="Nome da nova matéria" maxlength="60">
+    <select id="tpl" aria-label="Modelo">
+      <option value="simples">Modelo: média simples</option>
+      <option value="pond">Modelo: média ponderada</option>
+      <option value="branco">Modelo: em branco</option>
+    </select>
+    <button class="pri" type="submit">Adicionar</button>
+  </form>
+
+  <div class="list" id="list"></div>
+
+  <details>
+    <summary>Como escrever as fórmulas</summary>
+    <ul>
+      <li>Operações: <code>+ - * /</code> e <code>^</code> (potência). Decimais com vírgula ou ponto: <code>4,9</code> ou <code>4.9</code>.</li>
+      <li>Separe os argumentos com ponto e vírgula: <code>min(MT; MP)</code>.</li>
+      <li>Intervalos: <code>T1..T8</code> vale por T1; T2; …; T8. Ex.: <code>media(T1..T8)</code>.</li>
+      <li>Funções: <code>min</code>, <code>max</code>, <code>media</code>, <code>soma</code>, <code>arred(x; casas)</code>, <code>abs</code>, <code>piso</code>, <code>teto</code>.</li>
+      <li>Média ponderada: <code>mediap(T1..T4; PesoT1..PesoT4)</code> ou <code>mediap(P1; 2; P2; 3)</code>.</li>
+      <li>Condição: <code>se(condição; valor se sim; valor se não)</code>. Comparações: <code>&lt; &lt;= &gt; &gt;= = &lt;&gt;</code> (também <code>≥ ≤ ≠</code>). Junte condições com <code>and</code> / <code>or</code>.</li>
+      <li>Uma fórmula pode usar notas e outras fórmulas, em qualquer ordem. Maiúsculas e minúsculas não importam.</li>
+      <li>Nota em branco = ainda não saiu. As fórmulas que dependem dela ficam com “–”, e o app calcula quanto você precisa tirar.</li>
+    </ul>
+  </details>
+
+  <details>
+    <summary>Backup das notas</summary>
+    <p class="sub" style="margin:8px 0 12px">As notas ficam salvas só neste aparelho e neste navegador. Exporte um arquivo para guardar uma cópia ou levar as notas para outro aparelho, e importe-o lá.</p>
+    <div class="foot">
+      <button type="button" id="exportBtn">Exportar notas</button>
+      <button type="button" id="importBtn">Importar notas</button>
+      <input type="file" id="importFile" accept="application/json,.json" hidden>
+    </div>
+  </details>
+</main>
+<div class="toast" id="toast"><span id="toastMsg"></span><button id="undo" type="button">Desfazer</button></div>
+
+<script>
+{
+const KEY='minhas-notas-v2';
+const K=s=>String(s).trim().toLowerCase();
+
+const V=(n)=>({n,v:null});
+const mc358=()=>({id:1,name:'MC358',pass:5,max:10,
+  vars:['P1','P2','P3','P4','T1','T2','T3','T4','T5','T6','T7','T8','E'].map(V),
+  forms:[{n:'MT',e:'media(T1..T8)'},{n:'MP',e:'(1*P1 + 2*P2 + 2*P3 + 4*P4) / 9'},
+    {n:'MS',e:'se(min(MT; MP) >= 5; (MT + 4*MP)/5; min(4,9; (MT + 4*MP)/5))'},
+    {n:'MF',e:'se(MS >= 2,5 and MS < 5; (MS + E)/2; MS)'}]});
+const mc322=()=>({id:2,name:'MC322',pass:5,max:10,
+  vars:['L1','L2','L3','L4','L5','L6','T','P','E'].map(V),
+  forms:[{n:'L',e:'media(L1..L6)'},{n:'M',e:'0,3*L + 0,3*T + 0,4*P'},
+    {n:'MF',e:'se(M >= 2,5 and M < 5; (M + E)/2; M)'}]});
+const ma311=()=>({id:3,name:'MA311',pass:5,max:10,
+  vars:['P1','P2','T1','T2','E'].map(V),
+  forms:[{n:'MS',e:'(4*P1 + 5*P2 + (T1 + T2)/2) / 10'},
+    {n:'MF',e:'se(MS >= 2,5 and MS < 5; min(5; (MS + E)/2); MS)'}]});
+const mc404=()=>{const m={id:4,name:'MC404',pass:5,max:10,
+  vars:['NP1','NP2','T1','T2','T3','T4'].map(V).concat(['PesoP1','PesoP2','PesoT1','PesoT2','PesoT3','PesoT4'].map(n=>({n,v:1}))),
+  forms:[{n:'MA',e:'mediap(T1..T4; PesoT1..PesoT4)'},{n:'MP',e:'mediap(NP1; PesoP1; NP2; PesoP2)'},{n:'MF',e:'0,6*MP + 0,4*MA'}]};return m};
+const tpls={simples:()=>({vars:['P1','P2'].map(V),forms:[{n:'Média',e:'media(P1; P2)'}]}),
+  pond:()=>({vars:['P1','P2','T'].map(V),forms:[{n:'Média',e:'(3*P1 + 3*P2 + 4*T) / 10'}]}),
+  branco:()=>({vars:[],forms:[{n:'Média',e:''}]})};
+let st;
+try{st=JSON.parse(localStorage.getItem(KEY))}catch(e){}
+if(!st||!Array.isArray(st.subjects))st={subjects:[mc358()]};
+const LEG={
+ mc358:{P1:'Prova 1 (peso 1)',P2:'Prova 2 (peso 2)',P3:'Prova 3 (peso 2)',P4:'Prova 4 (peso 4)',T1:'Teste 1 (em dupla, em aula)',T2:'Teste 2',T3:'Teste 3',T4:'Teste 4',T5:'Teste 5',T6:'Teste 6',T7:'Teste 7',T8:'Teste 8',E:'Exame final (só se 2,5 ≤ MS < 5)',MT:'Média dos testes',MP:'Média das provas (ponderada)',MS:'Média semestral (no máx. 4,9 se MT ou MP < 5)',MF:'Média final — aprova com 5,0'},
+ mc322:{L1:'Atividade de laboratório 1 (em dupla)',L2:'Laboratório 2',L3:'Laboratório 3',L4:'Laboratório 4',L5:'Laboratório 5',L6:'Laboratório 6',T:'Prova teórica',P:'Projeto prático (grupo de 3 ou 4)',E:'Exame (precisa de 75% de frequência e M ≥ 2,5)',L:'Média dos laboratórios',M:'Média (30% lab + 30% prova + 40% projeto)',MF:'Média final — aprova com 5,0'},
+ ma311:{P1:'Prova 1 (peso 4)',P2:'Prova 2 (peso 5)',T1:'Trabalho 1',T2:'Trabalho 2',E:'Exame final optativo (só se 2,5 ≤ MS < 5)',MS:'Média semestral',MF:'Média final (com exame, no máx. 5,0) — aprova com 5,0'},
+ mc404:{NP1:'Nota da prova 1',NP2:'Nota da prova 2',T1:'Atividade de laboratório 1',T2:'Atividade 2',T3:'Atividade 3',T4:'Atividade 4',PesoP1:'Peso da prova 1 (a definir)',PesoP2:'Peso da prova 2 (a definir)',PesoT1:'Peso da atividade 1 (a definir)',PesoT2:'Peso da atividade 2',PesoT3:'Peso da atividade 3',PesoT4:'Peso da atividade 4',MA:'Média das atividades (ponderada)',MP:'Média das provas (ponderada)',MF:'Média final (60% provas + 40% atividades) — aprova com 5,0'}};
+st.seeded=st.seeded||(st.has322?['mc322']:[]);
+[['mc322',mc322],['ma311',ma311],['mc404',mc404]].forEach(([k,f])=>{if(st.seeded.includes(k))return;st.seeded.push(k);
+  if(!st.subjects.some(x=>K(x.name)===k)){const m=f();if(st.subjects.some(x=>x.id===m.id))m.id=Date.now()+st.seeded.length;st.subjects.push(m)}});
+if(!st.legend){st.subjects.forEach(x=>{const L=LEG[K(x.name)]||{};const lk=Object.fromEntries(Object.entries(L).map(([a,b])=>[K(a),b]));
+  x.vars.concat(x.forms).forEach(o=>{if(o.d==null&&lk[K(o.n)])o.d=lk[K(o.n)]})});st.legend=true}
+try{localStorage.setItem(KEY,JSON.stringify(st))}catch(e){}
+let last=null,timer;
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const fmt=v=>v==null||!isFinite(v)?'–':(Math.round(v*100)/100).toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:2});
+const num=v=>{if(v===''||v==null)return null;const n=parseFloat(String(v).trim().replace(',','.'));return isNaN(n)?null:n};
+const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(st))}catch(e){}};
+
+/* ---------- analisador de fórmulas (sem eval) ---------- */
+function lex(src){
+  const t=[];let i=0;const s=src.replace(/[{\[]/g,'(').replace(/[}\]]/g,')').replace(/×/g,'*').replace(/÷/g,'/').replace(/≥/g,'>=').replace(/≤/g,'<=').replace(/≠/g,'<>').replace(/:=/g,'');
+  while(i<s.length){
+    const c=s[i];
+    if(/\s/.test(c)){i++;continue}
+    let m;
+    if(m=s.slice(i).match(/^\d+(?:[.,]\d+)?/)){t.push({t:'n',v:parseFloat(m[0].replace(',','.'))});i+=m[0].length;continue}
+    if(m=s.slice(i).match(/^[A-Za-zÀ-ÿ_][\wÀ-ÿ]*(?:\.\.[A-Za-zÀ-ÿ_][\wÀ-ÿ]*)?/)){t.push({t:'id',v:m[0]});i+=m[0].length;continue}
+    if(m=s.slice(i).match(/^(<=|>=|<>|!=|==|&&|\|\||[-+*/^(),;<>=!])/)){t.push({t:'op',v:m[0]});i+=m[0].length;continue}
+    throw Error(`Caractere não reconhecido: “${c}”`);
+  }
+  return t;
+}
+function parse(src){
+  const t=lex(src);let p=0;
+  const peek=()=>t[p],isOp=v=>t[p]&&t[p].t==='op'&&t[p].v===v;
+  const isKw=(...w)=>t[p]&&t[p].t==='id'&&w.includes(K(t[p].v));
+  const expect=v=>{if(!isOp(v))throw Error(`Esperava “${v}”`);p++};
+  function or(){let a=and();while(isOp('||')||isKw('or','ou')){p++;a={k:'or',a,b:and()}}return a}
+  function and(){let a=not();while(isOp('&&')||isKw('and')){p++;a={k:'and',a,b:not()}}return a}
+  function not(){if(isOp('!')||isKw('not','nao','não')){p++;return{k:'not',a:not()}}return cmp()}
+  function cmp(){let a=add();const o=peek();if(o&&o.t==='op'&&['<','>','<=','>=','=','==','<>','!='].includes(o.v)){p++;a={k:'cmp',o:o.v,a,b:add()}}return a}
+  function add(){let a=mul();while(isOp('+')||isOp('-')){const o=t[p++].v;a={k:'bin',o,a,b:mul()}}return a}
+  function mul(){let a=un();while(isOp('*')||isOp('/')){const o=t[p++].v;a={k:'bin',o,a,b:un()}}return a}
+  function un(){if(isOp('-')){p++;return{k:'neg',a:un()}}if(isOp('+')){p++;return un()}return pow()}
+  function pow(){const a=prim();if(isOp('^')){p++;return{k:'bin',o:'^',a,b:un()}}return a}
+  function prim(){
+    const x=t[p++];if(!x)throw Error('Fórmula incompleta');
+    if(x.t==='n')return{k:'n',v:x.v};
+    if(x.t==='op'&&x.v==='('){const e=or();expect(')');return e}
+    if(x.t==='id'){
+      if(isOp('(')){p++;const args=[];if(!isOp(')')){do{args.push(or())}while((isOp(';')||isOp(','))&&++p)}expect(')');return{k:'fn',f:K(x.v),args}}
+      if(x.v.includes('..'))return{k:'range',v:x.v};
+      return{k:'var',v:x.v};
+    }
+    throw Error(`Não esperava “${x.v}”`);
+  }
+  const e=or();if(p<t.length)throw Error(`Sobrou “${t[p].v}” no fim (faltou um operador?)`);
+  return e;
+}
+function expandRange(r){
+  const [a,b]=r.split('..'),ma=a.match(/^(.*?)(\d+)$/),mb=b.match(/^(.*?)(\d+)$/);
+  if(!ma||!mb||K(ma[1])!==K(mb[1]))throw Error(`Intervalo inválido: ${r}`);
+  const out=[];const i0=+ma[2],i1=+mb[2];for(let i=Math.min(i0,i1);i<=Math.max(i0,i1);i++)out.push(ma[1]+i);
+  return out;
+}
+const MISS=Symbol('falta');
+function evaluate(node,get){
+  const ev=n=>evaluate(n,get);
+  const list=args=>args.flatMap(a=>a.k==='range'?expandRange(a.v).map(get):[ev(a)]);
+  switch(node.k){
+    case 'n':return node.v;
+    case 'var':return get(node.v);
+    case 'range':throw Error('Use intervalos só dentro de funções, ex.: media(T1..T8)');
+    case 'neg':{const a=ev(node.a);return a===MISS?MISS:-a}
+    case 'not':{const a=ev(node.a);return a===MISS?MISS:(a?0:1)}
+    case 'and':{const a=ev(node.a);if(a===0)return 0;const b=ev(node.b);if(a===MISS||b===MISS)return b===0?0:MISS;return a&&b?1:0}
+    case 'or':{const a=ev(node.a);if(a!==MISS&&a)return 1;const b=ev(node.b);if(a===MISS||b===MISS)return b!==MISS&&b?1:MISS;return b?1:0}
+    case 'bin':{const a=ev(node.a),b=ev(node.b);if(a===MISS||b===MISS)return MISS;
+      if(node.o==='/'&&b===0)throw Error('Divisão por zero');
+      return node.o==='+'?a+b:node.o==='-'?a-b:node.o==='*'?a*b:node.o==='/'?a/b:Math.pow(a,b)}
+    case 'cmp':{const a=ev(node.a),b=ev(node.b);if(a===MISS||b===MISS)return MISS;const e=1e-9;
+      return({'<':a<b-e,'>':a>b+e,'<=':a<=b+e,'>=':a>=b-e,'=':Math.abs(a-b)<e,'==':Math.abs(a-b)<e,'<>':Math.abs(a-b)>=e,'!=':Math.abs(a-b)>=e})[node.o]?1:0}
+    case 'fn':{
+      const f=node.f;
+      if(f==='se'||f==='if'||f==='si'){if(node.args.length!==3)throw Error('se() precisa de 3 partes: se(condição; sim; não)');
+        const c=ev(node.args[0]);if(c===MISS)return MISS;return ev(node.args[c?1:2])}
+      if(f==='mediap'||f==='wavg'){
+        let ns,ps;
+        if(node.args.length===2&&node.args.every(a=>a.k==='range')){ns=expandRange(node.args[0].v).map(get);ps=expandRange(node.args[1].v).map(get);
+          if(ns.length!==ps.length)throw Error('mediap: as listas de notas e pesos têm tamanhos diferentes')}
+        else{const xs=list(node.args);if(xs.length%2)throw Error('mediap: use mediap(nota; peso; nota; peso…) ou mediap(T1..T4; PesoT1..PesoT4)');
+          ns=xs.filter((_,i)=>i%2===0);ps=xs.filter((_,i)=>i%2===1)}
+        if(ns.includes(MISS)||ps.includes(MISS))return MISS;
+        const W=ps.reduce((a,b)=>a+b,0);if(!W)throw Error('mediap: a soma dos pesos é zero');
+        return ns.reduce((a,n,i)=>a+n*ps[i],0)/W}
+      const xs=list(node.args);if(xs.includes(MISS))return MISS;
+      if(!xs.length)throw Error(`${f}() sem argumentos`);
+      switch(f){
+        case 'min':return Math.min(...xs);case 'max':return Math.max(...xs);
+        case 'media':case 'média':case 'avg':case 'mean':case 'average':return xs.reduce((a,b)=>a+b,0)/xs.length;
+        case 'soma':case 'sum':return xs.reduce((a,b)=>a+b,0);
+        case 'abs':return Math.abs(xs[0]);case 'piso':case 'floor':return Math.floor(xs[0]);case 'teto':case 'ceil':return Math.ceil(xs[0]);
+        case 'arred':case 'round':{const d=xs[1]||0,m=10**d;return Math.round(xs[0]*m+1e-9)/m}
+      }
+      throw Error(`Função desconhecida: ${f}()`);
+    }
+  }
+}
+/* calcula todas as fórmulas de uma matéria; override = valores para notas em branco */
+function compute(s,fill){
+  const vars=new Map(s.vars.map(x=>[K(x.n),x])),forms=new Map(),res={},errs={},memo=new Map(),busy=new Set();
+  s.forms.forEach((f,i)=>{if(K(f.n))forms.set(K(f.n),i)});
+  const parsed=s.forms.map((f,i)=>{try{return f.e.trim()?parse(f.e):null}catch(e){errs[i]=e.message;return null}});
+  function get(name){
+    const k=K(name);
+    if(forms.has(k))return calc(forms.get(k));
+    if(vars.has(k)){const v=vars.get(k).v;return v==null?(fill!=null?fill:MISS):v}
+    throw Error(`“${name}” não existe. Crie uma nota ou fórmula com esse nome.`);
+  }
+  function calc(i){
+    if(memo.has(i))return memo.get(i);
+    if(busy.has(i))throw Error(`Referência circular em ${s.forms[i].n}`);
+    if(errs[i])throw Error(`erro em ${s.forms[i].n}`);
+    if(!parsed[i])return MISS;
+    busy.add(i);let v;try{v=evaluate(parsed[i],get)}finally{busy.delete(i)}
+    memo.set(i,v);return v;
+  }
+  s.forms.forEach((f,i)=>{if(errs[i])return;try{res[i]=calc(i)}catch(e){errs[i]=e.message}});
+  const li=s.forms.length-1;
+  return{res,errs,final:li>=0&&res[li]!==MISS&&res[li]!=null&&!errs[li]?res[li]:null};
+}
+function need(s){
+  if(!s.vars.some(x=>x.v==null)||!s.forms.length)return'';
+  const f=v=>compute(s,v).final,hi=s.max,lo=0;
+  const fl=f(lo),fh=f(hi);
+  if(fh==null)return'';
+  const name=s.forms[s.forms.length-1].n||'nota final';
+  if(fl!=null&&fl>=s.pass-1e-9)return`Você já garantiu ${esc(name)} ≥ ${fmt(s.pass)}, mesmo tirando zero no que falta.`;
+  if(fh<s.pass-1e-9)return`Mesmo tirando ${fmt(hi)} em tudo que falta, ${esc(name)} não chega a ${fmt(s.pass)}.`;
+  let a=lo,b=hi;for(let i=0;i<40;i++){const m=(a+b)/2,v=f(m);if(v!=null&&v>=s.pass-1e-9)b=m;else a=m}
+  const miss=s.vars.filter(x=>x.v==null).map(x=>esc(x.n));
+  return`Para ${esc(name)} chegar a ${fmt(s.pass)}, você precisa de <b>${fmt(Math.ceil(b*100)/100)}</b> em média nas notas que faltam (${miss.length>6?miss.slice(0,6).join(', ')+'…':miss.join(', ')}).`;
+}
+function status(s,v){
+  if(v==null)return['Em andamento','na'];
+  return v>=s.pass-1e-9?['Aprovado','ok']:['Abaixo da média','bad'];
+}
+
+/* ---------- interface ---------- */
+function render(){
+  const L=$('list'),sums=[];
+  if(!st.subjects.length)L.innerHTML='<div class="empty">Nenhuma matéria ainda. Digite o nome acima e clique em <b>Adicionar</b>.</div>';
+  else L.innerHTML=st.subjects.map(s=>{
+    const c=compute(s),[t,cl]=status(s,c.final),nd=need(s),li=s.forms.length-1;
+    sums.push(`<a class="chip" href="#m${s.id}"><span>${esc(s.name)}</span><b class="${cl==='ok'?'ok':cl==='bad'?'bad':'na'}">${fmt(c.final)}</b></a>`);
+    return`<article class="card" id="m${s.id}" data-id="${s.id}">
+      <div class="head"><div><h2>${esc(s.name)}</h2><span class="tag ${cl}">${t}</span></div>
+        <div class="final"><b class="${cl==='ok'?'ok':cl==='na'?'na':'bad'}">${fmt(c.final)}</b><span class="na" style="font-size:14px">${esc(s.forms[li]?.n||'Final')}</span></div></div>
+      <section><h3>Notas (deixe em branco o que ainda não saiu)</h3>
+        <div class="vars">${s.vars.map((x,i)=>`<div class="var" data-i="${i}"><label for="v${s.id}_${i}">${esc(x.n)}<button class="x" data-act="delV" aria-label="Remover ${esc(x.n)}">✕</button></label>
+          <input id="v${s.id}_${i}" data-f="v" inputmode="decimal" value="${x.v==null?'':String(x.v).replace('.',',')}" placeholder="–"></div>`).join('')||'<span class="na">Nenhuma nota ainda.</span>'}</div>
+        <form class="row2" data-act="addV"><input name="nv" placeholder="Novas notas: P1 P2 ou T1..T8" aria-label="Nomes das novas notas"><button type="submit">+ Notas</button></form>
+      </section>
+      <section><h3>Fórmulas</h3><div class="forms">
+        ${s.forms.map((f,i)=>`<div class="f${i===li?' last':''}" data-i="${i}">
+          <input class="mono" data-f="n" value="${esc(f.n)}" aria-label="Nome da fórmula" maxlength="20">
+          <span class="eq">:=</span>
+          <input class="mono ex" data-f="e" value="${esc(f.e)}" aria-label="Fórmula de ${esc(f.n)}" placeholder="ex.: (P1 + 2*P2) / 3" spellcheck="false" autocomplete="off">
+          <output>${c.errs[i]?'!':fmt(c.res[i]===undefined||c.res[i]===MISS?null:c.res[i])}</output>
+          <button class="x" data-act="delF" aria-label="Remover fórmula">✕</button>
+          ${c.errs[i]?`<div class="err">${esc(c.errs[i])}</div>`:''}</div>`).join('')}
+      </div></section>
+      ${nd?`<p class="need">${nd}</p>`:''}
+      <details class="leg" open><summary>Legenda</summary><div class="lg">
+        ${s.vars.map((x,i)=>`<label for="dv${s.id}_${i}"><b>${esc(x.n)}</b></label><input id="dv${s.id}_${i}" data-f="d" data-k="v" data-i="${i}" value="${esc(x.d||'')}" placeholder="o que é ${esc(x.n)}?">`).join('')}
+        ${s.forms.map((x,i)=>`<label for="df${s.id}_${i}"><b>${esc(x.n)}</b></label><input id="df${s.id}_${i}" data-f="d" data-k="f" data-i="${i}" value="${esc(x.d||'')}" placeholder="o que é ${esc(x.n)}?">`).join('')}
+      </div><p class="na" style="font-size:13px;margin:8px 0 0">“–” = ainda falta nota. Verde = aprovado, vermelho = abaixo da média, cinza = em andamento.</p></details>
+      <div class="foot"><button data-act="addF">+ Fórmula</button>
+        <label>Aprova com <input id="pass${s.id}" data-f="pass" inputmode="decimal" value="${String(s.pass).replace('.',',')}"></label>
+        <label>Nota máx. <input id="max${s.id}" data-f="max" inputmode="decimal" value="${String(s.max).replace('.',',')}"></label>
+        <button class="ghost" data-act="ren">Renomear</button><button class="ghost" data-act="delS">Excluir matéria</button></div>
+    </article>`}).join('');
+  $('sum').innerHTML=sums.join('');
+}
+function upd(){save();render()}
+function keepFocus(fn){const a=document.activeElement,id=a&&a.id,ds=a&&a.dataset&&a.dataset.f,card=a&&a.closest&&a.closest('.card'),row=a&&a.closest&&a.closest('.f');
+  let s0=null,s1=null;try{s0=a.selectionStart;s1=a.selectionEnd}catch(e){}
+  fn();
+  let el=id&&$(id);
+  if(!el&&card&&row&&ds)el=document.querySelector(`.card[data-id="${card.dataset.id}"] .f[data-i="${row.dataset.i}"] [data-f="${ds}"]`);
+  if(el){el.focus();try{if(s0!=null)el.setSelectionRange(s0,s1)}catch(e){}}}
+function toast(msg){$('toastMsg').textContent=msg;$('toast').style.display='flex';clearTimeout(timer);timer=setTimeout(()=>$('toast').style.display='none',6000)}
+const sub=id=>st.subjects.find(s=>s.id==id);
+function names(str){return str.split(/[\s,;]+/).filter(Boolean).flatMap(w=>w.includes('..')?(()=>{try{return expandRange(w)}catch(e){return[w]}})():[w])}
+
+$('addForm').addEventListener('submit',e=>{e.preventDefault();const n=$('newName').value.trim();if(!n)return $('newName').focus();
+  const s=Object.assign({id:Date.now(),name:n,pass:5,max:10},tpls[$('tpl').value]());st.subjects.push(s);$('newName').value='';upd();
+  document.getElementById('m'+s.id).scrollIntoView({behavior:'smooth'})});
+
+$('list').addEventListener('input',e=>{
+  const inp=e.target,f=inp.dataset.f;if(!f)return;
+  const s=sub(inp.closest('.card').dataset.id);
+  if(f==='d'){const o=(inp.dataset.k==='v'?s.vars:s.forms)[inp.dataset.i];o.d=inp.value;save();return}
+  if(f==='v'){const x=s.vars[inp.closest('.var').dataset.i];let v=num(inp.value);x.v=v}
+  else if(f==='n'||f==='e'){s.forms[inp.closest('.f').dataset.i][f]=inp.value}
+  else if(f==='pass'){const v=num(inp.value);if(v==null)return;s.pass=v}
+  else if(f==='max'){const v=num(inp.value);if(!(v>0))return;s.max=v}
+  save();keepFocus(render);
+});
+$('list').addEventListener('submit',e=>{
+  e.preventDefault();const fm=e.target;if(fm.dataset.act!=='addV')return;
+  const s=sub(fm.closest('.card').dataset.id),have=new Set(s.vars.map(x=>K(x.n)));
+  names(fm.nv.value).forEach(n=>{if(!have.has(K(n))){s.vars.push(V(n));have.add(K(n))}});upd();
+  document.querySelector(`.card[data-id="${s.id}"] [name=nv]`).focus();
+});
+$('list').addEventListener('click',e=>{
+  const b=e.target.closest('button[data-act]');if(!b)return;e.preventDefault();
+  const card=b.closest('.card'),s=sub(card.dataset.id),act=b.dataset.act;
+  if(act==='addF'){s.forms.push({n:'X'+(s.forms.length+1),e:''});upd();
+    const r=card.ownerDocument.querySelectorAll(`.card[data-id="${s.id}"] .f`);r[r.length-1].querySelector('[data-f=e]').focus()}
+  if(act==='delF'){last=JSON.stringify(st);const i=+b.closest('.f').dataset.i;const n=s.forms[i].n;s.forms.splice(i,1);upd();toast(`Fórmula ${n} removida.`)}
+  if(act==='delV'){last=JSON.stringify(st);const i=+b.closest('.var').dataset.i;const n=s.vars[i].n;s.vars.splice(i,1);upd();toast(`Nota ${n} removida.`)}
+  if(act==='delS'){last=JSON.stringify(st);st.subjects=st.subjects.filter(x=>x!==s);upd();toast(`“${s.name}” excluída.`)}
+  if(act==='ren'){const h=card.querySelector('h2');h.innerHTML=`<input value="${esc(s.name)}" aria-label="Novo nome" maxlength="60">`;
+    const i=h.querySelector('input');i.focus();i.select();let done=false;
+    const fin=()=>{if(done)return;done=true;const v=i.value.trim();if(v)s.name=v;upd()};
+    i.addEventListener('blur',fin);i.addEventListener('keydown',k=>{if(k.key==='Enter')fin();if(k.key==='Escape'){i.value='';fin()}})}
+});
+$('undo').addEventListener('click',()=>{if(last){st=JSON.parse(last);last=null;upd()}$('toast').style.display='none'});
+/* backup: exporta/importa o estado inteiro como JSON */
+$('exportBtn').addEventListener('click',()=>{
+  const blob=new Blob([JSON.stringify(st,null,2)],{type:'application/json'}),a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);a.download=`minhas-notas-${new Date().toISOString().slice(0,10)}.json`;
+  document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+});
+$('importBtn').addEventListener('click',()=>$('importFile').click());
+$('importFile').addEventListener('change',async e=>{
+  const f=e.target.files[0];e.target.value='';if(!f)return;
+  try{const d=JSON.parse(await f.text());
+    if(!d||!Array.isArray(d.subjects)||!d.subjects.every(s=>s&&typeof s.name==='string'&&Array.isArray(s.vars)&&Array.isArray(s.forms)))throw Error('formato');
+    last=JSON.stringify(st);st=d;st.seeded=st.seeded||['mc322','ma311','mc404'];st.legend=true;upd();toast(`Notas importadas (${d.subjects.length} matérias).`);
+  }catch(err){$('toastMsg').textContent='Arquivo inválido: não é um backup do Minhas Notas.';$('toast').style.display='flex';clearTimeout(timer);timer=setTimeout(()=>$('toast').style.display='none',6000)}
+});
+render();
+window.__test={compute,parse,mc358,mc322,ma311,mc404};
+}
+</script>
+<script>if ('serviceWorker' in navigator) addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));</script>
+</body>
+</html>
