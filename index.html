@@ -119,6 +119,7 @@ details li{margin:4px 0}
       <input type="file" id="importFile" accept="application/json,.json" hidden>
     </div>
   </details>
+  <p class="na" style="font-size:13px;margin:18px 0 0">Versão 1.3</p>
 </main>
 <div class="toast" id="toast"><span id="toastMsg"></span><button id="undo" type="button">Desfazer</button></div>
 
@@ -310,7 +311,7 @@ function render(){
         <div class="final"><b class="${cl==='ok'?'ok':cl==='na'?'na':'bad'}">${fmt(c.final)}</b><span class="na" style="font-size:14px">${esc(s.forms[li]?.n||'Final')}</span></div></div>
       <section><h3>Notas (deixe em branco o que ainda não saiu)</h3>
         <div class="vars">${s.vars.map((x,i)=>`<div class="var" data-i="${i}"><label for="v${s.id}_${i}">${esc(x.n)}<button class="x" data-act="delV" aria-label="Remover ${esc(x.n)}">✕</button></label>
-          <input id="v${s.id}_${i}" data-f="v" inputmode="decimal" value="${x.v==null?'':String(x.v).replace('.',',')}" placeholder="–"></div>`).join('')||'<span class="na">Nenhuma nota ainda.</span>'}</div>
+          <input id="v${s.id}_${i}" data-f="v" inputmode="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" value="${x.v==null?'':String(x.v).replace('.',',')}" placeholder="–"></div>`).join('')||'<span class="na">Nenhuma nota ainda.</span>'}</div>
         <form class="row2" data-act="addV"><input name="nv" placeholder="Novas notas: P1 P2 ou T1..T8" aria-label="Nomes das novas notas"><button type="submit">+ Notas</button></form>
       </section>
       <section><h3>Fórmulas</h3><div class="forms">
@@ -328,8 +329,8 @@ function render(){
         ${s.forms.map((x,i)=>`<label for="df${s.id}_${i}"><b>${esc(x.n)}</b></label><input id="df${s.id}_${i}" data-f="d" data-k="f" data-i="${i}" value="${esc(x.d||'')}" placeholder="o que é ${esc(x.n)}?">`).join('')}
       </div><p class="na" style="font-size:13px;margin:8px 0 0">“–” = ainda falta nota. Verde = aprovado, vermelho = abaixo da média, cinza = em andamento.</p></details>
       <div class="foot"><button data-act="addF">+ Fórmula</button>
-        <label>Aprova com <input id="pass${s.id}" data-f="pass" inputmode="decimal" value="${String(s.pass).replace('.',',')}"></label>
-        <label>Nota máx. <input id="max${s.id}" data-f="max" inputmode="decimal" value="${String(s.max).replace('.',',')}"></label>
+        <label>Aprova com <input id="pass${s.id}" data-f="pass" inputmode="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" value="${String(s.pass).replace('.',',')}"></label>
+        <label>Nota máx. <input id="max${s.id}" data-f="max" inputmode="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" value="${String(s.max).replace('.',',')}"></label>
         <button class="ghost" data-act="ren">Renomear</button><button class="ghost" data-act="delS">Excluir matéria</button></div>
     </article>`}).join('');
   $('sum').innerHTML=sums.join('');
