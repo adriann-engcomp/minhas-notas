@@ -119,7 +119,7 @@ details li{margin:4px 0}
       <input type="file" id="importFile" accept="application/json,.json" hidden>
     </div>
   </details>
-  <p class="na" style="font-size:13px;margin:18px 0 0">Versão 1.3</p>
+  <p class="na" style="font-size:13px;margin:18px 0 0">Versão 1.4</p>
 </main>
 <div class="toast" id="toast"><span id="toastMsg"></span><button id="undo" type="button">Desfazer</button></div>
 
@@ -380,6 +380,11 @@ function refresh(s){
   const p=card.querySelector('.need');p.innerHTML=nd;p.hidden=!nd;
   const chip=document.querySelector(`#sum a[href="#m${s.id}"] b`);if(chip){chip.className=cl==='ok'?'ok':cl==='bad'?'bad':'na';chip.textContent=fmt(c.final)}
 }
+/* ao sair do campo, mostra o número no padrão brasileiro: 4.5 ou 4,5 viram "4,5" (o valor salvo não muda) */
+$('list').addEventListener('change',e=>{
+  const inp=e.target,f=inp.dataset.f;if(f!=='v'&&f!=='pass'&&f!=='max')return;
+  const v=num(inp.value);if(v!=null)inp.value=String(v).replace('.',',');
+});
 $('list').addEventListener('submit',e=>{
   e.preventDefault();const fm=e.target;if(fm.dataset.act!=='addV')return;
   const s=sub(fm.closest('.card').dataset.id),have=new Set(s.vars.map(x=>K(x.n)));
