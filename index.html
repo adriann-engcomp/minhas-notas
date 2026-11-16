@@ -336,11 +336,12 @@ function render(){
 }
 function upd(){save();render()}
 function keepFocus(fn){const a=document.activeElement,id=a&&a.id,ds=a&&a.dataset&&a.dataset.f,card=a&&a.closest&&a.closest('.card'),row=a&&a.closest&&a.closest('.f');
+  const txt=a&&'value' in a?a.value:null; /* o texto como foi digitado: "7," ainda não é número, mas não pode sumir */
   let s0=null,s1=null;try{s0=a.selectionStart;s1=a.selectionEnd}catch(e){}
   fn();
   let el=id&&$(id);
   if(!el&&card&&row&&ds)el=document.querySelector(`.card[data-id="${card.dataset.id}"] .f[data-i="${row.dataset.i}"] [data-f="${ds}"]`);
-  if(el){el.focus();try{if(s0!=null)el.setSelectionRange(s0,s1)}catch(e){}}}
+  if(el){if(txt!=null&&el.value!==txt)el.value=txt;el.focus();try{if(s0!=null)el.setSelectionRange(s0,s1)}catch(e){}}}
 function toast(msg){$('toastMsg').textContent=msg;$('toast').style.display='flex';clearTimeout(timer);timer=setTimeout(()=>$('toast').style.display='none',6000)}
 const sub=id=>st.subjects.find(s=>s.id==id);
 function names(str){return str.split(/[\s,;]+/).filter(Boolean).flatMap(w=>w.includes('..')?(()=>{try{return expandRange(w)}catch(e){return[w]}})():[w])}
