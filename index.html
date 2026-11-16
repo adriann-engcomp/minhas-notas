@@ -322,7 +322,7 @@ function render(){
           <button class="x" data-act="delF" aria-label="Remover fórmula">✕</button>
           ${c.errs[i]?`<div class="err">${esc(c.errs[i])}</div>`:''}</div>`).join('')}
       </div></section>
-      ${nd?`<p class="need">${nd}</p>`:''}
+      <p class="need"${nd?'':' hidden'}>${nd}</p>
       <details class="leg" open><summary>Legenda</summary><div class="lg">
         ${s.vars.map((x,i)=>`<label for="dv${s.id}_${i}"><b>${esc(x.n)}</b></label><input id="dv${s.id}_${i}" data-f="d" data-k="v" data-i="${i}" value="${esc(x.d||'')}" placeholder="o que é ${esc(x.n)}?">`).join('')}
         ${s.forms.map((x,i)=>`<label for="df${s.id}_${i}"><b>${esc(x.n)}</b></label><input id="df${s.id}_${i}" data-f="d" data-k="f" data-i="${i}" value="${esc(x.d||'')}" placeholder="o que é ${esc(x.n)}?">`).join('')}
@@ -358,8 +358,27 @@ $('list').addEventListener('input',e=>{
   else if(f==='n'||f==='e'){s.forms[inp.closest('.f').dataset.i][f]=inp.value}
   else if(f==='pass'){const v=num(inp.value);if(v==null)return;s.pass=v}
   else if(f==='max'){const v=num(inp.value);if(!(v>0))return;s.max=v}
-  save();keepFocus(render);
+  save();
+  /* Só o nome da fórmula mexe em rótulos espalhados pelo cartão: aí redesenha tudo.
+     Para notas, fórmulas e limites, atualiza só os resultados e NÃO troca o campo onde se digita:
+     no celular, trocar o campo a cada tecla faz o teclado perder a vírgula e os dígitos seguintes. */
+  if(f==='n')keepFocus(render);else refresh(s);
 });
+/* recalcula um cartão e atualiza resultados, cores e o "quanto falta" no lugar, sem tocar nos campos */
+function refresh(s){
+  const card=document.querySelector(`.card[data-id="${s.id}"]`);if(!card)return render();
+  const c=compute(s),[t,cl]=status(s,c.final),nd=need(s),cor=cl==='ok'?'ok':cl==='na'?'na':'bad';
+  const tag=card.querySelector('.head .tag');tag.className='tag '+cl;tag.textContent=t;
+  const fin=card.querySelector('.final b');fin.className=cor;fin.textContent=fmt(c.final);
+  card.querySelectorAll('.forms .f').forEach(row=>{
+    const i=+row.dataset.i;row.querySelector('output').textContent=c.errs[i]?'!':fmt(c.res[i]===undefined||c.res[i]===MISS?null:c.res[i]);
+    let er=row.querySelector('.err');
+    if(c.errs[i]){if(!er){er=document.createElement('div');er.className='err';row.appendChild(er)}er.textContent=c.errs[i]}
+    else if(er)er.remove();
+  });
+  const p=card.querySelector('.need');p.innerHTML=nd;p.hidden=!nd;
+  const chip=document.querySelector(`#sum a[href="#m${s.id}"] b`);if(chip){chip.className=cl==='ok'?'ok':cl==='bad'?'bad':'na';chip.textContent=fmt(c.final)}
+}
 $('list').addEventListener('submit',e=>{
   e.preventDefault();const fm=e.target;if(fm.dataset.act!=='addV')return;
   const s=sub(fm.closest('.card').dataset.id),have=new Set(s.vars.map(x=>K(x.n)));
