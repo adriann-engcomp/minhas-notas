@@ -381,6 +381,8 @@ $('list').addEventListener('click',e=>{
 $('undo').addEventListener('click',()=>{if(last){st=JSON.parse(last);last=null;upd()}$('toast').style.display='none'});
 /* backup: exporta/importa o estado inteiro como JSON */
 $('exportBtn').addEventListener('click',()=>{
+  const nome=`minhas-notas-${new Date().toISOString().slice(0,10)}.json`;
+  if(window.Android&&Android.salvar){Android.salvar(nome,JSON.stringify(st,null,2));return} /* app Android (APK) */
   const blob=new Blob([JSON.stringify(st,null,2)],{type:'application/json'}),a=document.createElement('a');
   a.href=URL.createObjectURL(blob);a.download=`minhas-notas-${new Date().toISOString().slice(0,10)}.json`;
   document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(a.href),1000);
