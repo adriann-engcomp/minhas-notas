@@ -58,6 +58,7 @@ h3{font-size:15px;margin:0 0 8px;color:var(--soft);font-weight:500}
 .forms{display:grid;gap:8px}
 .f{display:grid;grid-template-columns:minmax(64px,110px) auto minmax(0,1fr) 70px 40px;gap:8px;align-items:center}
 .f .eq{font-family:'JetBrains Mono',monospace;color:var(--soft)}
+.f output.parc{color:var(--soft)}
 .f output{font-family:Caveat,cursive;font-size:30px;text-align:right;color:var(--red);white-space:nowrap}
 .f .x{min-height:40px;width:40px;padding:0;color:var(--soft)}
 .f.last{background:var(--paper);border-radius:12px;padding:6px;margin:0 -6px}
@@ -119,7 +120,7 @@ details li{margin:4px 0}
       <input type="file" id="importFile" accept="application/json,.json" hidden>
     </div>
   </details>
-  <p class="na" style="font-size:13px;margin:18px 0 0">Versão 1.5</p>
+  <p class="na" style="font-size:13px;margin:18px 0 0">Versão 1.6</p>
 </main>
 <div class="toast" id="toast"><span id="toastMsg"></span><button id="undo" type="button">Desfazer</button></div>
 
@@ -131,22 +132,22 @@ const K=s=>String(s).trim().toLowerCase();
 const V=(n)=>({n,v:null});
 const mc358=()=>({id:1,name:'MC358',pass:5,max:10,
   vars:['P1','P2','P3','P4','T1','T2','T3','T4','T5','T6','T7','T8','E'].map(V),
-  forms:[{n:'MT',e:'media(T1..T8)'},{n:'MP',e:'(1*P1 + 2*P2 + 2*P3 + 4*P4) / 9'},
+  forms:[{n:'MT',e:'media(T1..T8)'},{n:'MP',e:'mediap(P1; 1; P2; 2; P3; 2; P4; 4)'},
     {n:'MS',e:'se(min(MT; MP) >= 5; (MT + 4*MP)/5; min(4,9; (MT + 4*MP)/5))'},
     {n:'MF',e:'se(MS >= 2,5 and MS < 5; (MS + E)/2; MS)'}]});
 const mc322=()=>({id:2,name:'MC322',pass:5,max:10,
   vars:['L1','L2','L3','L4','L5','L6','T','P','E'].map(V),
-  forms:[{n:'L',e:'media(L1..L6)'},{n:'M',e:'0,3*L + 0,3*T + 0,4*P'},
+  forms:[{n:'L',e:'media(L1..L6)'},{n:'M',e:'mediap(L; 3; T; 3; P; 4)'},
     {n:'MF',e:'se(M >= 2,5 and M < 5; (M + E)/2; M)'}]});
 const ma311=()=>({id:3,name:'MA311',pass:5,max:10,
   vars:['P1','P2','T1','T2','E'].map(V),
-  forms:[{n:'MS',e:'(4*P1 + 5*P2 + (T1 + T2)/2) / 10'},
+  forms:[{n:'MS',e:'mediap(P1; 4; P2; 5; media(T1; T2); 1)'},
     {n:'MF',e:'se(MS >= 2,5 and MS < 5; min(5; (MS + E)/2); MS)'}]});
 const mc404=()=>{const m={id:4,name:'MC404',pass:5,max:10,
   vars:['NP1','NP2','T1','T2','T3','T4'].map(V).concat(['PesoP1','PesoP2','PesoT1','PesoT2','PesoT3','PesoT4'].map(n=>({n,v:1}))),
-  forms:[{n:'MA',e:'mediap(T1..T4; PesoT1..PesoT4)'},{n:'MP',e:'mediap(NP1; PesoP1; NP2; PesoP2)'},{n:'MF',e:'0,6*MP + 0,4*MA'}]};return m};
+  forms:[{n:'MA',e:'mediap(T1..T4; PesoT1..PesoT4)'},{n:'MP',e:'mediap(NP1; PesoP1; NP2; PesoP2)'},{n:'MF',e:'mediap(MP; 6; MA; 4)'}]};return m};
 const tpls={simples:()=>({vars:['P1','P2'].map(V),forms:[{n:'Média',e:'media(P1; P2)'}]}),
-  pond:()=>({vars:['P1','P2','T'].map(V),forms:[{n:'Média',e:'(3*P1 + 3*P2 + 4*T) / 10'}]}),
+  pond:()=>({vars:['P1','P2','T'].map(V),forms:[{n:'Média',e:'mediap(P1; 3; P2; 3; T; 4)'}]}),
   branco:()=>({vars:[],forms:[{n:'Média',e:''}]})};
 let st;
 try{st=JSON.parse(localStorage.getItem(KEY))}catch(e){}
@@ -161,6 +162,11 @@ st.seeded=st.seeded||(st.has322?['mc322']:[]);
   if(!st.subjects.some(x=>K(x.name)===k)){const m=f();if(st.subjects.some(x=>x.id===m.id))m.id=Date.now()+st.seeded.length;st.subjects.push(m)}});
 if(!st.legend){st.subjects.forEach(x=>{const L=LEG[K(x.name)]||{};const lk=Object.fromEntries(Object.entries(L).map(([a,b])=>[K(a),b]));
   x.vars.concat(x.forms).forEach(o=>{if(o.d==null&&lk[K(o.n)])o.d=lk[K(o.n)]})});st.legend=true}
+/* 1.6: fórmulas ponderadas reescritas com mediap() para a média parcial funcionar (mesmo resultado com todas as notas);
+   só troca se o texto ainda for exatamente o original, para não mexer no que você editou */
+if(!st.parcial){const ANT={'(1*P1 + 2*P2 + 2*P3 + 4*P4) / 9':'mediap(P1; 1; P2; 2; P3; 2; P4; 4)','0,3*L + 0,3*T + 0,4*P':'mediap(L; 3; T; 3; P; 4)',
+  '(4*P1 + 5*P2 + (T1 + T2)/2) / 10':'mediap(P1; 4; P2; 5; media(T1; T2); 1)','0,6*MP + 0,4*MA':'mediap(MP; 6; MA; 4)','(3*P1 + 3*P2 + 4*T) / 10':'mediap(P1; 3; P2; 3; T; 4)'};
+  st.subjects.forEach(x=>x.forms.forEach(f=>{const n=ANT[String(f.e).trim().replace(/\s+/g,' ')];if(n)f.e=n}));st.parcial=true}
 try{localStorage.setItem(KEY,JSON.stringify(st))}catch(e){}
 let last=null,timer;
 const $=id=>document.getElementById(id);
@@ -217,8 +223,10 @@ function expandRange(r){
   return out;
 }
 const MISS=Symbol('falta');
-function evaluate(node,get){
-  const ev=n=>evaluate(n,get);
+/* parc = média parcial: media(), mediap() e soma() ignoram as notas que ainda não saíram
+   (e em mediap os pesos delas), em vez de deixar o resultado pendente */
+function evaluate(node,get,parc){
+  const ev=n=>evaluate(n,get,parc);
   const list=args=>args.flatMap(a=>a.k==='range'?expandRange(a.v).map(get):[ev(a)]);
   switch(node.k){
     case 'n':return node.v;
@@ -243,10 +251,13 @@ function evaluate(node,get){
           if(ns.length!==ps.length)throw Error('mediap: as listas de notas e pesos têm tamanhos diferentes')}
         else{const xs=list(node.args);if(xs.length%2)throw Error('mediap: use mediap(nota; peso; nota; peso…) ou mediap(T1..T4; PesoT1..PesoT4)');
           ns=xs.filter((_,i)=>i%2===0);ps=xs.filter((_,i)=>i%2===1)}
+        if(parc){const k=ns.map((n,i)=>n!==MISS&&ps[i]!==MISS);ns=ns.filter((_,i)=>k[i]);ps=ps.filter((_,i)=>k[i]);if(!ns.length)return MISS}
         if(ns.includes(MISS)||ps.includes(MISS))return MISS;
         const W=ps.reduce((a,b)=>a+b,0);if(!W)throw Error('mediap: a soma dos pesos é zero');
         return ns.reduce((a,n,i)=>a+n*ps[i],0)/W}
-      const xs=list(node.args);if(xs.includes(MISS))return MISS;
+      let xs=list(node.args);
+      if(parc&&['media','média','avg','mean','average','soma','sum'].includes(f)&&xs.length){xs=xs.filter(x=>x!==MISS);if(!xs.length)return MISS}
+      if(xs.includes(MISS))return MISS;
       if(!xs.length)throw Error(`${f}() sem argumentos`);
       switch(f){
         case 'min':return Math.min(...xs);case 'max':return Math.max(...xs);
@@ -260,7 +271,7 @@ function evaluate(node,get){
   }
 }
 /* calcula todas as fórmulas de uma matéria; override = valores para notas em branco */
-function compute(s,fill){
+function compute(s,fill,parc){
   const vars=new Map(s.vars.map(x=>[K(x.n),x])),forms=new Map(),res={},errs={},memo=new Map(),busy=new Set();
   s.forms.forEach((f,i)=>{if(K(f.n))forms.set(K(f.n),i)});
   const parsed=s.forms.map((f,i)=>{try{return f.e.trim()?parse(f.e):null}catch(e){errs[i]=e.message;return null}});
@@ -275,7 +286,7 @@ function compute(s,fill){
     if(busy.has(i))throw Error(`Referência circular em ${s.forms[i].n}`);
     if(errs[i])throw Error(`erro em ${s.forms[i].n}`);
     if(!parsed[i])return MISS;
-    busy.add(i);let v;try{v=evaluate(parsed[i],get)}finally{busy.delete(i)}
+    busy.add(i);let v;try{v=evaluate(parsed[i],get,parc)}finally{busy.delete(i)}
     memo.set(i,v);return v;
   }
   s.forms.forEach((f,i)=>{if(errs[i])return;try{res[i]=calc(i)}catch(e){errs[i]=e.message}});
@@ -317,15 +328,25 @@ function status(s,v){
 }
 
 /* ---------- interface ---------- */
+/* o que mostrar no cartão: a média definitiva, ou a PARCIAL (só com as notas que já saíram) enquanto faltam notas */
+function mostra(s){
+  const c=compute(s),[t,cl]=status(s,c.final),li=s.forms.length-1,nome=s.forms[li]?.n||'Final';
+  const p=c.final==null?compute(s,null,true):null,num=v=>typeof v==='number'&&isFinite(v);
+  let fin=c.final,lbl=nome,parcial=false;
+  if(c.final==null&&p){for(let i=li;i>=0;i--)if(num(p.res[i])&&!p.errs[i]){fin=p.res[i];lbl=(s.forms[i].n||'Média')+' parcial';parcial=true;break}}
+  const outs=s.forms.map((_,i)=>c.errs[i]?{txt:'!',cls:''}:num(c.res[i])?{txt:fmt(c.res[i]),cls:''}:p&&num(p.res[i])?{txt:'≈'+fmt(p.res[i]),cls:'parc'}:{txt:'–',cls:''});
+  const cor=parcial||c.final==null?'na':cl==='ok'?'ok':'bad';
+  return{c,t,cl,li,fin,lbl,parcial,outs,cor,chip:(parcial?'≈':'')+fmt(fin)};
+}
 function render(){
   const L=$('list'),sums=[];
   if(!st.subjects.length)L.innerHTML='<div class="empty">Nenhuma matéria ainda. Digite o nome acima e clique em <b>Adicionar</b>.</div>';
   else L.innerHTML=st.subjects.map(s=>{
-    const c=compute(s),[t,cl]=status(s,c.final),nd=need(s),li=s.forms.length-1;
-    sums.push(`<a class="chip" href="#m${s.id}"><span>${esc(s.name)}</span><b class="${cl==='ok'?'ok':cl==='bad'?'bad':'na'}">${fmt(c.final)}</b></a>`);
+    const m=mostra(s),c=m.c,t=m.t,cl=m.cl,nd=need(s),li=m.li;
+    sums.push(`<a class="chip" href="#m${s.id}"><span>${esc(s.name)}</span><b class="${m.cor}">${m.chip}</b></a>`);
     return`<article class="card" id="m${s.id}" data-id="${s.id}">
       <div class="head"><div><h2>${esc(s.name)}</h2><span class="tag ${cl}">${t}</span></div>
-        <div class="final"><b class="${cl==='ok'?'ok':cl==='na'?'na':'bad'}">${fmt(c.final)}</b><span class="na" style="font-size:14px">${esc(s.forms[li]?.n||'Final')}</span><span class="na faixa" style="font-size:13px;display:block">${faixa(s,c)}</span></div></div>
+        <div class="final"><b class="${m.cor}">${fmt(m.fin)}</b><span class="na lbl" style="font-size:14px">${esc(m.lbl)}</span><span class="na faixa" style="font-size:13px;display:block">${faixa(s,c)}</span></div></div>
       <section><h3>Notas (deixe em branco o que ainda não saiu)</h3>
         <div class="vars">${s.vars.map((x,i)=>`<div class="var" data-i="${i}"><label for="v${s.id}_${i}">${esc(x.n)}<button class="x" data-act="delV" aria-label="Remover ${esc(x.n)}">✕</button></label>
           <input id="v${s.id}_${i}" data-f="v" inputmode="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" value="${x.v==null?'':String(x.v).replace('.',',')}" placeholder="–"></div>`).join('')||'<span class="na">Nenhuma nota ainda.</span>'}</div>
@@ -336,7 +357,7 @@ function render(){
           <input class="mono" data-f="n" value="${esc(f.n)}" aria-label="Nome da fórmula" maxlength="20">
           <span class="eq">:=</span>
           <input class="mono ex" data-f="e" value="${esc(f.e)}" aria-label="Fórmula de ${esc(f.n)}" placeholder="ex.: (P1 + 2*P2) / 3" spellcheck="false" autocomplete="off">
-          <output>${c.errs[i]?'!':fmt(c.res[i]===undefined||c.res[i]===MISS?null:c.res[i])}</output>
+          <output class="${m.outs[i].cls}">${m.outs[i].txt}</output>
           <button class="x" data-act="delF" aria-label="Remover fórmula">✕</button>
           ${c.errs[i]?`<div class="err">${esc(c.errs[i])}</div>`:''}</div>`).join('')}
       </div></section>
@@ -344,7 +365,7 @@ function render(){
       <details class="leg" open><summary>Legenda</summary><div class="lg">
         ${s.vars.map((x,i)=>`<label for="dv${s.id}_${i}"><b>${esc(x.n)}</b></label><input id="dv${s.id}_${i}" data-f="d" data-k="v" data-i="${i}" value="${esc(x.d||'')}" placeholder="o que é ${esc(x.n)}?">`).join('')}
         ${s.forms.map((x,i)=>`<label for="df${s.id}_${i}"><b>${esc(x.n)}</b></label><input id="df${s.id}_${i}" data-f="d" data-k="f" data-i="${i}" value="${esc(x.d||'')}" placeholder="o que é ${esc(x.n)}?">`).join('')}
-      </div><p class="na" style="font-size:13px;margin:8px 0 0">“–” = ainda falta nota. Verde = aprovado, vermelho = abaixo da média, cinza = em andamento.</p></details>
+      </div><p class="na" style="font-size:13px;margin:8px 0 0">“≈” = média parcial, só com as notas que já saíram. “–” = ainda falta nota. Verde = aprovado, vermelho = abaixo da média, cinza = em andamento.</p></details>
       <div class="foot"><button data-act="addF">+ Fórmula</button>
         <label>Aprova com <input id="pass${s.id}" data-f="pass" inputmode="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" value="${String(s.pass).replace('.',',')}"></label>
         <label>Nota máx. <input id="max${s.id}" data-f="max" inputmode="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" value="${String(s.max).replace('.',',')}"></label>
@@ -385,18 +406,18 @@ $('list').addEventListener('input',e=>{
 /* recalcula um cartão e atualiza resultados, cores e o "quanto falta" no lugar, sem tocar nos campos */
 function refresh(s){
   const card=document.querySelector(`.card[data-id="${s.id}"]`);if(!card)return render();
-  const c=compute(s),[t,cl]=status(s,c.final),nd=need(s),cor=cl==='ok'?'ok':cl==='na'?'na':'bad';
+  const m=mostra(s),c=m.c,t=m.t,cl=m.cl,nd=need(s);
   const tag=card.querySelector('.head .tag');tag.className='tag '+cl;tag.textContent=t;
-  const fin=card.querySelector('.final b');fin.className=cor;fin.textContent=fmt(c.final);
+  const fin=card.querySelector('.final b');fin.className=m.cor;fin.textContent=fmt(m.fin);card.querySelector('.final .lbl').textContent=m.lbl;
   card.querySelector('.final .faixa').textContent=faixa(s,c);
   card.querySelectorAll('.forms .f').forEach(row=>{
-    const i=+row.dataset.i;row.querySelector('output').textContent=c.errs[i]?'!':fmt(c.res[i]===undefined||c.res[i]===MISS?null:c.res[i]);
+    const i=+row.dataset.i,o=row.querySelector('output');o.textContent=m.outs[i].txt;o.className=m.outs[i].cls;
     let er=row.querySelector('.err');
     if(c.errs[i]){if(!er){er=document.createElement('div');er.className='err';row.appendChild(er)}er.textContent=c.errs[i]}
     else if(er)er.remove();
   });
   const p=card.querySelector('.need');p.innerHTML=nd;p.hidden=!nd;
-  const chip=document.querySelector(`#sum a[href="#m${s.id}"] b`);if(chip){chip.className=cl==='ok'?'ok':cl==='bad'?'bad':'na';chip.textContent=fmt(c.final)}
+  const chip=document.querySelector(`#sum a[href="#m${s.id}"] b`);if(chip){chip.className=m.cor;chip.textContent=m.chip}
 }
 /* ao sair do campo, mostra o número no padrão brasileiro: 4.5 ou 4,5 viram "4,5" (o valor salvo não muda) */
 $('list').addEventListener('change',e=>{
