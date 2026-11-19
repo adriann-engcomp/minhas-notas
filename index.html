@@ -119,7 +119,7 @@ details li{margin:4px 0}
       <input type="file" id="importFile" accept="application/json,.json" hidden>
     </div>
   </details>
-  <p class="na" style="font-size:13px;margin:18px 0 0">Versão 1.4</p>
+  <p class="na" style="font-size:13px;margin:18px 0 0">Versão 1.5</p>
 </main>
 <div class="toast" id="toast"><span id="toastMsg"></span><button id="undo" type="button">Desfazer</button></div>
 
@@ -267,7 +267,7 @@ function compute(s,fill){
   function get(name){
     const k=K(name);
     if(forms.has(k))return calc(forms.get(k));
-    if(vars.has(k)){const v=vars.get(k).v;return v==null?(fill!=null?fill:MISS):v}
+    if(vars.has(k)){const x=vars.get(k),v=x.v;return v==null?(fill==null?MISS:typeof fill==='function'?fill(x):fill):v}
     throw Error(`“${name}” não existe. Crie uma nota ou fórmula com esse nome.`);
   }
   function calc(i){
@@ -282,17 +282,34 @@ function compute(s,fill){
   const li=s.forms.length-1;
   return{res,errs,final:li>=0&&res[li]!==MISS&&res[li]!=null&&!errs[li]?res[li]:null};
 }
+/* nota de exame: tratada à parte (quem não faz exame fica com E = 0, como nos critérios da Unicamp) */
+const ehExame=x=>['e','exame','ex'].includes(K(x.n));
 function need(s){
-  if(!s.vars.some(x=>x.v==null)||!s.forms.length)return'';
-  const f=v=>compute(s,v).final,hi=s.max,lo=0;
-  const fl=f(lo),fh=f(hi);
-  if(fh==null)return'';
-  const name=s.forms[s.forms.length-1].n||'nota final';
-  if(fl!=null&&fl>=s.pass-1e-9)return`Você já garantiu ${esc(name)} ≥ ${fmt(s.pass)}, mesmo tirando zero no que falta.`;
-  if(fh<s.pass-1e-9)return`Mesmo tirando ${fmt(hi)} em tudo que falta, ${esc(name)} não chega a ${fmt(s.pass)}.`;
-  let a=lo,b=hi;for(let i=0;i<40;i++){const m=(a+b)/2,v=f(m);if(v!=null&&v>=s.pass-1e-9)b=m;else a=m}
-  const miss=s.vars.filter(x=>x.v==null).map(x=>esc(x.n));
-  return`Para ${esc(name)} chegar a ${fmt(s.pass)}, você precisa de <b>${fmt(Math.ceil(b*100)/100)}</b> em média nas notas que faltam (${miss.length>6?miss.slice(0,6).join(', ')+'…':miss.join(', ')}).`;
+  const falta=s.vars.filter(x=>x.v==null);
+  if(!falta.length||!s.forms.length||compute(s).final!=null)return'';
+  const name=esc(s.forms[s.forms.length-1].n||'nota final'),P=s.pass,hi=s.max,ok=v=>v!=null&&v>=P-1e-9;
+  const reg=falta.filter(x=>!ehExame(x)),ex=falta.filter(ehExame);
+  const lista=a=>{const n=a.map(x=>esc(x.n));return n.length>6?n.slice(0,6).join(', ')+'…':n.join(', ')};
+  const busca=f=>{let a=0,b=hi;for(let i=0;i<40;i++){const m=(a+b)/2;if(ok(f(m)))b=m;else a=m}return fmt(Math.ceil(b*100)/100)};
+  const semEx=ex.length?' sem exame':'';
+  if(reg.length){
+    const g=x=>compute(s,v=>ehExame(v)?0:x).final;
+    if(g(hi)==null)return'';
+    if(ok(g(0)))return`Você já garantiu ${name} ≥ ${fmt(P)}${semEx}, mesmo tirando zero em ${lista(reg)}.`;
+    if(ok(g(hi)))return`Para passar${semEx}, você precisa de <b>${busca(g)}</b> ${reg.length>1?'em média em':'em'} ${lista(reg)}.`;
+    const comEx=ex.length&&ok(compute(s,hi).final);
+    return`Mesmo tirando ${fmt(hi)} em ${lista(reg)}, ${name} não chega a ${fmt(P)}${semEx}.`+(ex.length?(comEx?' Ainda dá para passar com o exame.':' Nem com o exame.'):'');
+  }
+  const e=x=>compute(s,x).final;
+  if(e(hi)==null)return'';
+  if(!ok(e(hi)))return`Mesmo tirando ${fmt(hi)} no exame, ${name} não chega a ${fmt(P)}.`;
+  return`Para ${name} chegar a ${fmt(P)}, você precisa de <b>${busca(e)}</b> no exame (${lista(ex)}).`;
+}
+/* pior e melhor caso da nota final enquanto faltam notas: tudo que falta = 0 ou = nota máxima */
+function faixa(s,c){
+  if(c.final!=null)return'';
+  const lo=compute(s,0).final,hi=compute(s,s.max).final;
+  return lo==null||hi==null?'':`entre ${fmt(lo)} e ${fmt(hi)}`;
 }
 function status(s,v){
   if(v==null)return['Em andamento','na'];
@@ -308,7 +325,7 @@ function render(){
     sums.push(`<a class="chip" href="#m${s.id}"><span>${esc(s.name)}</span><b class="${cl==='ok'?'ok':cl==='bad'?'bad':'na'}">${fmt(c.final)}</b></a>`);
     return`<article class="card" id="m${s.id}" data-id="${s.id}">
       <div class="head"><div><h2>${esc(s.name)}</h2><span class="tag ${cl}">${t}</span></div>
-        <div class="final"><b class="${cl==='ok'?'ok':cl==='na'?'na':'bad'}">${fmt(c.final)}</b><span class="na" style="font-size:14px">${esc(s.forms[li]?.n||'Final')}</span></div></div>
+        <div class="final"><b class="${cl==='ok'?'ok':cl==='na'?'na':'bad'}">${fmt(c.final)}</b><span class="na" style="font-size:14px">${esc(s.forms[li]?.n||'Final')}</span><span class="na faixa" style="font-size:13px;display:block">${faixa(s,c)}</span></div></div>
       <section><h3>Notas (deixe em branco o que ainda não saiu)</h3>
         <div class="vars">${s.vars.map((x,i)=>`<div class="var" data-i="${i}"><label for="v${s.id}_${i}">${esc(x.n)}<button class="x" data-act="delV" aria-label="Remover ${esc(x.n)}">✕</button></label>
           <input id="v${s.id}_${i}" data-f="v" inputmode="text" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" value="${x.v==null?'':String(x.v).replace('.',',')}" placeholder="–"></div>`).join('')||'<span class="na">Nenhuma nota ainda.</span>'}</div>
@@ -371,6 +388,7 @@ function refresh(s){
   const c=compute(s),[t,cl]=status(s,c.final),nd=need(s),cor=cl==='ok'?'ok':cl==='na'?'na':'bad';
   const tag=card.querySelector('.head .tag');tag.className='tag '+cl;tag.textContent=t;
   const fin=card.querySelector('.final b');fin.className=cor;fin.textContent=fmt(c.final);
+  card.querySelector('.final .faixa').textContent=faixa(s,c);
   card.querySelectorAll('.forms .f').forEach(row=>{
     const i=+row.dataset.i;row.querySelector('output').textContent=c.errs[i]?'!':fmt(c.res[i]===undefined||c.res[i]===MISS?null:c.res[i]);
     let er=row.querySelector('.err');
