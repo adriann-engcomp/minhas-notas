@@ -63,6 +63,18 @@ h3{font-size:15px;margin:0 0 8px;color:var(--soft);font-weight:500}
 .f .x{min-height:40px;width:40px;padding:0;color:var(--soft)}
 .f.last{background:var(--paper);border-radius:12px;padding:6px;margin:0 -6px}
 .err{grid-column:1/-1;color:var(--red);font-size:14px;margin:-2px 0 4px}
+.prox{display:grid;gap:8px;margin:18px 0 0}
+.prox h2,.avs h3{margin:0}
+.prox h2{font-size:18px}
+.pa{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 12px;align-items:baseline;background:var(--paper);border:1px solid var(--line);border-radius:12px;padding:8px 14px;text-decoration:none;color:var(--ink)}
+.pa small{grid-column:1/-1;color:var(--soft);font-size:13px}
+.cd{font-weight:700;white-space:nowrap;text-align:right}
+.cd.warn{color:var(--warn)}.cd.bad{color:var(--red)}.cd.na{color:var(--soft);font-weight:500}
+.avl{display:grid;gap:8px}
+.av{display:grid;grid-template-columns:minmax(70px,1fr) minmax(0,150px) minmax(0,110px) 40px;gap:8px;align-items:center}
+.av .cd{grid-column:1/-1;text-align:left;font-size:14px;margin:-2px 0 4px}
+.av .x{min-height:40px;width:40px;padding:0;color:var(--soft)}
+@media(max-width:600px){.av{grid-template-columns:minmax(0,1.5fr) minmax(0,1fr) 40px}.av input{padding:8px 6px}.av [data-f=an]{grid-column:1/-1}}
 .need{margin:0;font-size:15px;background:var(--paper);border-left:4px solid var(--blue);padding:10px 14px;border-radius:0 10px 10px 0}
 .foot{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
 .foot label{display:flex;gap:8px;align-items:center;font-size:14px;color:var(--soft)}
@@ -84,6 +96,7 @@ details li{margin:4px 0}
   <h1>Minhas notas</h1>
   <p class="sub">Cada matéria tem as suas notas e o seu próprio critério de média. Escreva as fórmulas do jeito do plano de ensino e o resultado aparece na hora. A última fórmula de cada matéria é a nota final.</p>
   <div class="sum" id="sum"></div>
+  <section class="prox" id="prox" aria-live="polite"></section>
 
   <form class="add" id="addForm">
     <input id="newName" placeholder="Nova matéria (ex.: MA141)" aria-label="Nome da nova matéria" maxlength="60">
@@ -120,7 +133,7 @@ details li{margin:4px 0}
       <input type="file" id="importFile" accept="application/json,.json" hidden>
     </div>
   </details>
-  <p class="na" style="font-size:13px;margin:18px 0 0">Versão 1.6</p>
+  <p class="na" style="font-size:13px;margin:18px 0 0">Versão 1.7</p>
 </main>
 <div class="toast" id="toast"><span id="toastMsg"></span><button id="undo" type="button">Desfazer</button></div>
 
@@ -130,7 +143,11 @@ const KEY='minhas-notas-v2';
 const K=s=>String(s).trim().toLowerCase();
 
 const V=(n)=>({n,v:null});
-const mc358=()=>({id:1,name:'MC358',pass:5,max:10,
+/* próximas avaliações (2s2026). d = 'AAAA-MM-DD' ou 'AAAA-MM-DDTHH:MM' (horário de Brasília); sem hora = horário a confirmar
+   MC358 turma A: calendário da disciplina (aulas às 10h). MA311: cronograma da disciplina. MC404: cronograma de estudo do Prof. Allan */
+const AVS={mc358:()=>[{n:'T8',d:'2026-11-26T10:00'},{n:'P4',d:'2026-12-03T10:00'},{n:'Exame',d:'2026-12-10T10:00'}],
+  ma311:()=>[{n:'P2',d:'2026-11-30'},{n:'Exame',d:'2026-12-11'}],mc404:()=>[{n:'P2',d:'2026-11-30'}],mc322:()=>[]};
+const mc358=()=>({id:1,name:'MC358',pass:5,max:10,avs:AVS.mc358(),
   vars:['P1','P2','P3','P4','T1','T2','T3','T4','T5','T6','T7','T8','E'].map(V),
   forms:[{n:'MT',e:'media(T1..T8)'},{n:'MP',e:'mediap(P1; 1; P2; 2; P3; 2; P4; 4)'},
     {n:'MS',e:'se(min(MT; MP) >= 5; (MT + 4*MP)/5; min(4,9; (MT + 4*MP)/5))'},
@@ -139,11 +156,11 @@ const mc322=()=>({id:2,name:'MC322',pass:5,max:10,
   vars:['L1','L2','L3','L4','L5','L6','T','P','E'].map(V),
   forms:[{n:'L',e:'media(L1..L6)'},{n:'M',e:'mediap(L; 3; T; 3; P; 4)'},
     {n:'MF',e:'se(M >= 2,5 and M < 5; (M + E)/2; M)'}]});
-const ma311=()=>({id:3,name:'MA311',pass:5,max:10,
+const ma311=()=>({id:3,name:'MA311',pass:5,max:10,avs:AVS.ma311(),
   vars:['P1','P2','T1','T2','E'].map(V),
   forms:[{n:'MS',e:'mediap(P1; 4; P2; 5; media(T1; T2); 1)'},
     {n:'MF',e:'se(MS >= 2,5 and MS < 5; min(5; (MS + E)/2); MS)'}]});
-const mc404=()=>{const m={id:4,name:'MC404',pass:5,max:10,
+const mc404=()=>{const m={id:4,name:'MC404',pass:5,max:10,avs:AVS.mc404(),
   vars:['NP1','NP2','T1','T2','T3','T4'].map(V).concat(['PesoP1','PesoP2','PesoT1','PesoT2','PesoT3','PesoT4'].map(n=>({n,v:1}))),
   forms:[{n:'MA',e:'mediap(T1..T4; PesoT1..PesoT4)'},{n:'MP',e:'mediap(NP1; PesoP1; NP2; PesoP2)'},{n:'MF',e:'mediap(MP; 6; MA; 4)'}]};return m};
 const tpls={simples:()=>({vars:['P1','P2'].map(V),forms:[{n:'Média',e:'media(P1; P2)'}]}),
@@ -167,6 +184,8 @@ if(!st.legend){st.subjects.forEach(x=>{const L=LEG[K(x.name)]||{};const lk=Objec
 if(!st.parcial){const ANT={'(1*P1 + 2*P2 + 2*P3 + 4*P4) / 9':'mediap(P1; 1; P2; 2; P3; 2; P4; 4)','0,3*L + 0,3*T + 0,4*P':'mediap(L; 3; T; 3; P; 4)',
   '(4*P1 + 5*P2 + (T1 + T2)/2) / 10':'mediap(P1; 4; P2; 5; media(T1; T2); 1)','0,6*MP + 0,4*MA':'mediap(MP; 6; MA; 4)','(3*P1 + 3*P2 + 4*T) / 10':'mediap(P1; 3; P2; 3; T; 4)'};
   st.subjects.forEach(x=>x.forms.forEach(f=>{const n=ANT[String(f.e).trim().replace(/\s+/g,' ')];if(n)f.e=n}));st.parcial=true}
+if(!st.datas){st.subjects.forEach(x=>{if(!Array.isArray(x.avs))x.avs=(AVS[K(x.name)]||(()=>[]))()});st.datas=true}
+st.subjects.forEach(x=>{if(!Array.isArray(x.avs))x.avs=[]});
 try{localStorage.setItem(KEY,JSON.stringify(st))}catch(e){}
 let last=null,timer;
 const $=id=>document.getElementById(id);
@@ -362,6 +381,14 @@ function render(){
           ${c.errs[i]?`<div class="err">${esc(c.errs[i])}</div>`:''}</div>`).join('')}
       </div></section>
       <p class="need"${nd?'':' hidden'}>${nd}</p>
+      <section class="avs"><h3>Avaliações (data e contagem regressiva)</h3><div class="avl">
+        ${s.avs.map((a,i)=>{const[dd,tt]=(a.d||'').split('T');return`<div class="av" data-i="${i}">
+          <input data-f="an" value="${esc(a.n)}" aria-label="Nome da avaliação" maxlength="30">
+          <input type="date" data-f="ad" value="${esc(dd||'')}" aria-label="Data de ${esc(a.n)}">
+          <input type="time" data-f="at" value="${esc(tt||'')}" aria-label="Horário de ${esc(a.n)} (opcional)">
+          <button class="x" data-act="delA" aria-label="Remover ${esc(a.n)}">✕</button>
+          <span class="cd" data-s="${s.id}" data-i="${i}"></span></div>`}).join('')||'<span class="na" style="font-size:14px">Nenhuma avaliação marcada.</span>'}
+      </div><div class="foot" style="margin-top:8px"><button data-act="addA">+ Avaliação</button></div></section>
       <details class="leg" open><summary>Legenda</summary><div class="lg">
         ${s.vars.map((x,i)=>`<label for="dv${s.id}_${i}"><b>${esc(x.n)}</b></label><input id="dv${s.id}_${i}" data-f="d" data-k="v" data-i="${i}" value="${esc(x.d||'')}" placeholder="o que é ${esc(x.n)}?">`).join('')}
         ${s.forms.map((x,i)=>`<label for="df${s.id}_${i}"><b>${esc(x.n)}</b></label><input id="df${s.id}_${i}" data-f="d" data-k="f" data-i="${i}" value="${esc(x.d||'')}" placeholder="o que é ${esc(x.n)}?">`).join('')}
@@ -372,6 +399,7 @@ function render(){
         <button class="ghost" data-act="ren">Renomear</button><button class="ghost" data-act="delS">Excluir matéria</button></div>
     </article>`}).join('');
   $('sum').innerHTML=sums.join('');
+  tick();
 }
 function upd(){save();render()}
 function keepFocus(fn){const a=document.activeElement,id=a&&a.id,ds=a&&a.dataset&&a.dataset.f,card=a&&a.closest&&a.closest('.card'),row=a&&a.closest&&a.closest('.f');
@@ -393,6 +421,9 @@ $('list').addEventListener('input',e=>{
   const inp=e.target,f=inp.dataset.f;if(!f)return;
   const s=sub(inp.closest('.card').dataset.id);
   if(f==='d'){const o=(inp.dataset.k==='v'?s.vars:s.forms)[inp.dataset.i];o.d=inp.value;save();return}
+  if(f==='an'||f==='ad'||f==='at'){const r=inp.closest('.av'),a=s.avs[r.dataset.i];
+    if(f==='an')a.n=inp.value;else{const d=r.querySelector('[data-f=ad]').value,t=r.querySelector('[data-f=at]').value;a.d=d?(t?d+'T'+t:d):''}
+    save();tick();return}
   if(f==='v'){const x=s.vars[inp.closest('.var').dataset.i];let v=num(inp.value);x.v=v}
   else if(f==='n'||f==='e'){s.forms[inp.closest('.f').dataset.i][f]=inp.value}
   else if(f==='pass'){const v=num(inp.value);if(v==null)return;s.pass=v}
@@ -437,6 +468,8 @@ $('list').addEventListener('click',e=>{
     const r=card.ownerDocument.querySelectorAll(`.card[data-id="${s.id}"] .f`);r[r.length-1].querySelector('[data-f=e]').focus()}
   if(act==='delF'){last=JSON.stringify(st);const i=+b.closest('.f').dataset.i;const n=s.forms[i].n;s.forms.splice(i,1);upd();toast(`Fórmula ${n} removida.`)}
   if(act==='delV'){last=JSON.stringify(st);const i=+b.closest('.var').dataset.i;const n=s.vars[i].n;s.vars.splice(i,1);upd();toast(`Nota ${n} removida.`)}
+  if(act==='addA'){s.avs.push({n:'Prova',d:''});upd();const r=document.querySelectorAll(`.card[data-id="${s.id}"] .av`);r[r.length-1].querySelector('[data-f=ad]').focus()}
+  if(act==='delA'){last=JSON.stringify(st);const i=+b.closest('.av').dataset.i,n=s.avs[i].n;s.avs.splice(i,1);upd();toast(`Avaliação ${n} removida.`)}
   if(act==='delS'){last=JSON.stringify(st);st.subjects=st.subjects.filter(x=>x!==s);upd();toast(`“${s.name}” excluída.`)}
   if(act==='ren'){const h=card.querySelector('h2');h.innerHTML=`<input value="${esc(s.name)}" aria-label="Novo nome" maxlength="60">`;
     const i=h.querySelector('input');i.focus();i.select();let done=false;
@@ -460,6 +493,27 @@ $('importFile').addEventListener('change',async e=>{
     last=JSON.stringify(st);st=d;st.seeded=st.seeded||['mc322','ma311','mc404'];st.legend=true;upd();toast(`Notas importadas (${d.subjects.length} matérias).`);
   }catch(err){$('toastMsg').textContent='Arquivo inválido: não é um backup do Minhas Notas.';$('toast').style.display='flex';clearTimeout(timer);timer=setTimeout(()=>$('toast').style.display='none',6000)}
 });
+/* ---------- datas e contagem regressiva ---------- */
+function quando(a){if(!a||!a.d)return null;const[dd,tt]=a.d.split('T');const t=new Date(dd+'T'+(tt||'00:00'));return isNaN(t)?null:{t,hora:!!tt}}
+function falta(q){
+  const ms=q.t-Date.now();
+  if(ms<=-3*3600e3)return{txt:'já passou',cls:'na',passou:true};
+  if(ms<=0)return{txt:q.hora?'acontecendo agora':'é hoje',cls:'bad'};
+  const m=Math.floor(ms/60000),d=Math.floor(m/1440),h=Math.floor(m%1440/60),mi=m%60;
+  const txt=d?`${d} ${d>1?'dias':'dia'} e ${h} ${h===1?'hora':'horas'}`:h?`${h} h ${mi} min`:`${mi} min`;
+  return{txt:'faltam '+txt,cls:ms<86400e3?'bad':ms<3*86400e3?'warn':''};
+}
+function rotulo(q){const s=q.t.toLocaleDateString('pt-BR',{weekday:'short',day:'2-digit',month:'2-digit'}).replace('.,',',');
+  return s.charAt(0).toUpperCase()+s.slice(1)+(q.hora?' às '+q.t.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}):' · horário a confirmar')}
+function tick(){
+  document.querySelectorAll('.card .cd').forEach(el=>{const s=sub(el.dataset.s),a=s&&s.avs[el.dataset.i],q=quando(a);
+    if(!q){el.textContent='Escolha a data';el.className='cd na';return}const f=falta(q);el.textContent=rotulo(q)+' · '+f.txt;el.className='cd '+f.cls});
+  const lista=st.subjects.flatMap(s=>s.avs.map(a=>({s,a,q:quando(a)}))).filter(x=>x.q&&!falta(x.q).passou).sort((x,y)=>x.q.t-y.q.t);
+  $('prox').innerHTML=lista.length?'<h2>Próximas avaliações</h2>'+lista.map(({s,a,q})=>{const f=falta(q);
+    return`<a class="pa" href="#m${s.id}"><span><b>${esc(s.name)}</b> · ${esc(a.n)}</span><span class="cd ${f.cls}">${f.txt}</span><small>${rotulo(q)}</small></a>`}).join(''):'';
+}
+setInterval(tick,30000);
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)tick()});
 render();
 window.__test={compute,parse,mc358,mc322,ma311,mc404};
 }

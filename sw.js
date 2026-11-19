@@ -1,5 +1,5 @@
 // Service worker: guarda o app e as fontes para funcionar offline
-const CACHE = "notas-03ef595907";
+const CACHE = "notas-6e882e32f0";
 const ARQUIVOS = ["./", "index.html", "manifest.webmanifest", "icon-192.png", "icon-512.png"];
 self.addEventListener("install", e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(ARQUIVOS)).then(() => self.skipWaiting()));
